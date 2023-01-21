@@ -1,0 +1,34 @@
+name: Build and Upload to S3
+
+on:  
+  workflow_dispatch:
+jobs:
+
+  deploy_zip:
+    name: deploy lambda function
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    strategy:
+      matrix:
+        go-version: [1.19.x]
+    steps:
+      - name: checkout source code
+        uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+            role-to-assume: ${{ secrets.WORKFLOW_S3_ACCESS_ROLE_ARN }}
+            role-session-name: list-blogs
+            aws-region: us-east-1
+      - name: Install Go
+        uses: actions/setup-go@v3.5.0      
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Build binary
+        run: |
+           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -a -o main ./cmd/main.go && zip main.zip main
+      - name: Deploy to S3
+        run: aws s3 sync ./main.zip s3://${{ secrets.LAMBDA_SOURCE_BUCKET }//${{ github.event.repository.name }}
+     
