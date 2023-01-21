@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -15,7 +16,8 @@ type handler struct {
 }
 
 func (h *handler) handleRequest(ctx context.Context, request events.LambdaFunctionURLRequest) (events.LambdaFunctionURLResponse, error) {
-	blogs, err := service.QueryDynamoDB(ctx, h.dynamoDbClient)
+	log.Println("Headers:", request.Headers["x-forwarded-for"])
+	blogs, err := service.QueryDynamoDB(ctx, h.dynamoDbClient, os.Getenv("table_name"))
 	if err != nil {
 		return events.LambdaFunctionURLResponse{}, err
 	}

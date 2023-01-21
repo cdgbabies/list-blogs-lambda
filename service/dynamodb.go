@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"log"
-	"os"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
@@ -19,6 +17,7 @@ type Blog struct {
 	Description string    `json:"description" dynamodbav:"description"`
 	Title       string    `json:"title" dynamodbav:"title"`
 	CreatedDate time.Time `json:"createdDate" dynamodbav:"createdDate"`
+	User        string    `json:"user" dynamodbav:"user"`
 }
 type DynamoDbReadOperationClient interface {
 	Query(ctx context.Context, params *dynamodb.QueryInput, optFns ...func(*dynamodb.Options)) (*dynamodb.QueryOutput, error)
@@ -40,14 +39,14 @@ func NewDynamoDbClient(ctx context.Context, region string) *dynamodb.Client {
 
 }
 
-func QueryDynamoDB(ctx context.Context, client DynamoDbReadOperationClient) ([]Blog, error) {
+func QueryDynamoDB(ctx context.Context, client DynamoDbReadOperationClient, tableName string) ([]Blog, error) {
 
 	var blogs []Blog
 
 	keyEx := expression.Key("pk").Equal(expression.Value("blogs"))
 	expr, err := expression.NewBuilder().WithKeyCondition(keyEx).Build()
 	response, err := client.Query(ctx, &dynamodb.QueryInput{
-		TableName:                 aws.String(os.Getenv("table_name")),
+		TableName:                 &tableName,
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		KeyConditionExpression:    expr.KeyCondition(),
